@@ -9,6 +9,22 @@
     "dist"
   ],
   "license": "MIT",
+  "author": {
+    "name": "maxoyed",
+    "email": "maxoyed@gmail.com",
+    "url": "https://github.com/maxoyed"
+  },
+  "contributors": [
+    "maxoyed <maxoyed@gmail.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxoyed/koishi-plugin-qianfan-chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maxoyed/koishi-plugin-qianfan-chat/issues"
+  },
+  "homepage": "https://github.com/maxoyed/koishi-plugin-qianfan-chat#readme",
   "scripts": {},
   "keywords": [
     "chatbot",
@@ -17,5 +33,24 @@
   ],
   "peerDependencies": {
     "koishi": "^4.15.4"
+  },
+  "devDependencies": {
+    "koishi-plugin-qianfan-service": "^0.0.1",
+    "qianfan": "^0.0.4"
+  },
+  "koishi": {
+    "description": {
+      "zh": "基于百度智能云千帆大模型 Ernie-Bot 的 AI 对话/绘画插件"
+    },
+    "service": {
+      "required": [
+        "qianfan",
+        "database"
+      ],
+      "implements": []
+    },
+    "locales": [
+      "zh"
+    ]
   }
 }
