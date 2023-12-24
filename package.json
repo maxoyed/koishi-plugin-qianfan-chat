@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-qianfan-chat",
   "description": "基于百度智能云千帆大模型平台的AI对话&绘画插件",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -35,8 +35,8 @@
     "koishi": "^4.15.6"
   },
   "devDependencies": {
-    "koishi-plugin-qianfan-service": "^0.0.2",
-    "qianfan": "^0.0.6"
+    "koishi-plugin-qianfan-service": "^0.0.3",
+    "qianfan": "^0.0.7"
   },
   "koishi": {
     "description": {
@@ -52,5 +52,8 @@
     "locales": [
       "zh"
     ]
+  },
+  "dependencies": {
+    "qianfan": "^0.0.7"
   }
 }

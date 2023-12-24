@@ -1,5 +1,5 @@
 import { Context, Schema, Logger } from 'koishi'
-import { ChatModel } from 'qianfan/dist/interface'
+import { ChatBody, ChatModel } from 'qianfan/dist/interface'
 import {} from 'koishi-plugin-qianfan-service'
 
 export const name = 'qianfan-chat'
@@ -11,7 +11,28 @@ const logger = new Logger(name)
 export interface Config {
   COMMAND: string
   CHAT_MODEL: ChatModel
-  OPEN_IMAGINE: boolean
+  ENDPOINT: string
+  GENERATE_IMAGE: boolean
+  GENERATE_IMAGE_STYLE:
+    | 'Base'
+    | '3D Model'
+    | 'Analog Film'
+    | 'Anime'
+    | 'Cinematic'
+    | 'Comic Book'
+    | 'Craft Clay'
+    | 'Digital Art'
+    | 'Enhance'
+    | 'Fantasy Art'
+    | 'lsometric'
+    | 'Line Art'
+    | 'Lowpoly'
+    | 'Neonpunk'
+    | 'Origami'
+    | 'Photographic'
+    | 'Pixel Art'
+    | 'Texture'
+  OPEN_IMAGINE_CMD: boolean
   system: string
   temperature: number
   top_p: number
@@ -35,10 +56,52 @@ export interface QianfanChat {
 export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     COMMAND: Schema.string().default('chat').description('指令名称，不可重复'),
-    CHAT_MODEL: Schema.union(['ERNIE-Bot-4', 'ERNIE-Bot-8K', 'ERNIE-Bot', 'ERNIE-Bot-turbo'] as ChatModel[])
+    CHAT_MODEL: Schema.union([
+      'ERNIE-Bot-4',
+      'ERNIE-Bot-8K',
+      'ERNIE-Bot',
+      'ERNIE-Bot-turbo',
+      'EB-turbo-AppBuilder',
+      'Yi-34B-Chat',
+      'BLOOMZ-7B',
+      'Qianfan-BLOOMZ-7B-compressed',
+      'Llama-2-7b-chat',
+      'Llama-2-13b-chat',
+      'Llama-2-70b-chat',
+      'Qianfan-Chinese-Llama-2-7B',
+      'Qianfan-Chinese-Llama-2-13B',
+      'ChatGLM2-6B-32K',
+      'XuanYuan-70B-Chat-4bit',
+      'ChatLaw',
+      'AquilaChat-7B',
+    ] as ChatModel[])
       .default('ERNIE-Bot' as ChatModel)
       .description('对话模型'),
-    OPEN_IMAGINE: Schema.boolean().default(false).description('是否开启文生图'),
+    ENDPOINT: Schema.string().default('').description('申请发布时填写的API地址，优先级高于 `CHAT_MODEL`'),
+    GENERATE_IMAGE: Schema.boolean().default(false).description('是否根据内容生成图片'),
+    GENERATE_IMAGE_STYLE: Schema.union([
+      'Base',
+      '3D Model',
+      'Analog Film',
+      'Anime',
+      'Cinematic',
+      'Comic Book',
+      'Craft Clay',
+      'Digital Art',
+      'Enhance',
+      'Fantasy Art',
+      'lsometric',
+      'Line Art',
+      'Lowpoly',
+      'Neonpunk',
+      'Origami',
+      'Photographic',
+      'Pixel Art',
+      'Texture',
+    ])
+      .default('Base')
+      .description('生成图片的风格'),
+    OPEN_IMAGINE_CMD: Schema.boolean().default(false).description('是否开启文生图指令'),
     system: Schema.string()
       .role('textarea', { rows: [2, 6] })
       .max(1024)
@@ -118,11 +181,14 @@ export function apply(ctx: Context, config: Config) {
             content: '开始',
           },
         ],
-        system: config.system,
         temperature: config.temperature,
         top_p: config.top_p,
         penalty_score: config.penalty_score,
         user_id: session.userId,
+      } as any
+      // 处理 system
+      if (config.CHAT_MODEL.startsWith('ERNIE-Bot') && config.ENDPOINT.length === 0) {
+        chat_body.system = config.system
       }
       // 处理temperature和top_p
       if (config.temperature != 0.95) {
@@ -201,6 +267,9 @@ export function apply(ctx: Context, config: Config) {
           if (historyMessages[0].role !== 'user') {
             historyMessages.shift()
           }
+          if (!config.CHAT_MODEL.startsWith('ERNIE-Bot') || config.ENDPOINT.length > 0) {
+            historyMessages[0].content = config.system + '\n\n' + historyMessages[0].content
+          }
           // 将historyMessages添加到chat_body中
           chat_body.messages = historyMessages
         }
@@ -213,9 +282,13 @@ export function apply(ctx: Context, config: Config) {
           </>
         )
       }
+      // 处理 system
+      if ((!config.CHAT_MODEL.startsWith('ERNIE-Bot') || config.ENDPOINT.length > 0) && chat_body.messages.length === 1) {
+        chat_body.messages[0].content = config.system + '\n\n' + chat_body.messages[0].content
+      }
       logger.debug({ chat_body })
       // 发起请求
-      const resp = await ctx.qianfan.chat(chat_body as any, config.CHAT_MODEL)
+      const resp = await ctx.qianfan.chat(chat_body, config.CHAT_MODEL, config.ENDPOINT)
       if (!resp.need_clear_history) {
         // 如果开启多轮对话，则将对话记录存入数据库
         if (config.OPEN_HISTORY) {
@@ -240,6 +313,48 @@ export function apply(ctx: Context, config: Config) {
             create_at: new Date(),
           })
         }
+        // 处理文案图片生成
+        if (config.GENERATE_IMAGE) {
+          const imagePromptChinese = await ctx.qianfan.chat(
+            {
+              messages: [
+                {
+                  role: 'user',
+                  content: `你是一个AI绘画助手。\n\n${resp.result}\n\n使用一句话回答，以上内容的绘画关键词是：`,
+                },
+              ],
+            },
+            config.CHAT_MODEL,
+            config.ENDPOINT
+          )
+          logger.debug({ imagePromptChinese: imagePromptChinese.result })
+          const imagePromptEnglish = await ctx.qianfan.chat(
+            {
+              messages: [
+                {
+                  role: 'user',
+                  content: `你是一个中英翻译助手。\n\n${imagePromptChinese.result}\n\n使用一句话回答，不需要简化，以上内容翻译为英文是：`,
+                },
+              ],
+            },
+            config.CHAT_MODEL,
+            config.ENDPOINT
+          )
+          logger.debug({ imagePromptEnglish: imagePromptEnglish.result })
+          const imageRes = await ctx.qianfan.imagine({
+            prompt: imagePromptEnglish.result,
+            style: config.GENERATE_IMAGE_STYLE,
+            sampler_index: 'DPM++ 2M SDE Karras',
+            size: '1024x576',
+          })
+          return (
+            <>
+              <quote id={session.messageId} />
+              <image url={`data:image/png;base64,${imageRes.data[0].b64_image}`} />
+              {resp.result}
+            </>
+          )
+        }
         return (
           <>
             <quote id={session.messageId} />
@@ -255,7 +370,7 @@ export function apply(ctx: Context, config: Config) {
       )
     })
   // 文生图指令
-  if (config.OPEN_IMAGINE) {
+  if (config.OPEN_IMAGINE_CMD) {
     ctx.command('imagine [prompt:rawtext]', '绘画').action(async ({ session }, prompt: string) => {
       try {
         const resp = await ctx.qianfan.imagine({
