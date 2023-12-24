@@ -8,7 +8,10 @@
 
 - `COMMAND`: 聊天指令名称，默认 chat
 - `CHAT_MODEL`: 使用的模型，支持 ERNIE-Bot-4、ERNIE-Bot、ERNIE-Bot-turbo
-- `OPEN_IMAGINE`: 是否开启绘画指令
+- `ENDPOINT`: 申请发布时填写的 API 地址，优先级高于 `CHAT_MODEL`
+- `GENERATE_IMAGE`: 是否根据内容生成图片
+- `GENERATE_IMAGE_STYLE`: 生成图片的风格
+- `OPEN_IMAGINE_CMD`: 是否开启绘画指令
 - `system`: AI 系统人设，不超过 1024 个字，常用于设定角色卡
 - `temperature`: 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定；默认 0.95，建议该参数和 `top_p` 只改动 1 个
 - `top_p`: 影响输出文本的多样性，取值越大，生成文本的多样性越强；默认 0.8，建议该参数和 `temperature` 只改动 1 个
