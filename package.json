@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-qianfan-chat",
   "description": "基于百度智能云千帆大模型平台的AI对话&绘画插件",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -25,18 +25,17 @@
     "url": "https://github.com/maxoyed/koishi-plugin-qianfan-chat/issues"
   },
   "homepage": "https://github.com/maxoyed/koishi-plugin-qianfan-chat#readme",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
     "plugin"
   ],
   "peerDependencies": {
-    "koishi": "^4.15.6"
+    "koishi": "^4.16.2"
   },
   "devDependencies": {
-    "koishi-plugin-qianfan-service": "^0.0.3",
-    "qianfan": "^0.0.7"
+    "koishi-plugin-qianfan-service": "^0.0.4",
+    "qianfan": "^0.0.8"
   },
   "koishi": {
     "description": {
